@@ -1,0 +1,32 @@
+| Campo	                | Tipo	            | Descrição
+---------------------------------------------------------------------------------------------------------------------
+| id	                | String	        | ID único que identifica o evento
+| uri	                | String	        | URI única que identifica o evento ou entidade
+| request_id	        | String	        | ID único da requisição que ocasionou o evento
+| dt	                | String	        | Data do evento no formato ISO-8601
+| domain	            | String	        | Domínio do evento ou entidade a qual pertence
+| stream	            | String	        | Nome do stream/fila/datase ao qual o evento pertence
+| rcid	                | Integer	        | ID do evento "recentchange"
+| type	                | String	        | Tipo de evento "recentchante" - (edit, new, log, categorize, external)
+| title	                | String	        | Título da página
+| namespace	            | Integer	        | ID do namespace relativo à página afetada
+| comment	            | String	        | Comentário da alteração
+| parsedcomment	        | String	        | Comentário da alteração em formato HTML
+| timestamp	            | Integer	        | Timestamp do comentário
+| user	                | String	        | Usuário que efetuou a alteração
+| bot	                | Boolean	        | Identifica se é um bot
+| server_url  	        | String	        | URL canônica do servidor
+| server_name	        | String	        | Nome do servidor
+| server_script_path    | String	        | Caminho do script do servidor
+| wiki	                | String	        | ID da wiki
+| length	            | Object	        | Tamanho da antiga e nova mudança
+| length.old	        | Integer	        | Tamanho antes da mudança
+| length.new	        | Integer	        | Tamanho da nova mudança
+| revision	            | Object	        | Antigo e novo ID da revisão
+| revision.new	        | Integer	        | ID da nova mudança
+| revision.old	        | Integer	        | ID da antiga mudança
+| log_id	            | Integer	        | ID de log da mudança
+| log_type	            | String	        | Tipo da mudança
+| log_action	        | String	        | Ação da mudança
+| log_params	        | Array[String]	    | Parâmetros da mudança se existirem
+| log_action_comment	| String	        | Comentário da ação da mudança

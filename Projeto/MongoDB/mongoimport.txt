@@ -1,0 +1,1 @@
+mongoimport --db wiki --collection articles --file shcema.json

@@ -1,0 +1,19 @@
+4 - Entrada e Saida
+4.1 - A entrada será através do endpoint fornecido pelo Wiki <endpoint>
+4.2 - A saída serão relatórios mostrando o resultado das análises
+
+5 - Restrições
+5.1 - Os dados coletados serão somente do domínio pt.wikipedia.com
+
+6 - Entregáveis
+6.1 - Análises dos grupos encontrados 
+6.2 - Relatório de quantidade de alterações feitas por bot
+6.3 - Relatório sobre a influência dos bots em alterações na wikipedia
+
+7 - Prazo
+7.1 - Prazo da entrega do CMA e CPA - 31/03
+7.2 - Prazo Final - 05/05
+
+8 - Benefícios
+8.1 - Esclarecer a quantidade de bots utilizados para alteração de artigos na wikipedia
+8.2 - Mostrar se os bots são utilizados por grupos de influência 
