@@ -1,11 +1,9 @@
 import json
-import pymongo
+import boto3
 
-myclient = pymongo.MongoClient("mongodb://172.17.0.2:27017/")
-mydb = myclient["wiki"]
-mycol = mydb["articles"]
-
-
+my_stream_name = 'WikiStream'
+thing_id = 'wiki-bot'
+kinesis_client = boto3.client('firehose', region_name='us-east-1')
 
 from sseclient import SSEClient as EventSource
 domains = ['pt.wikipedia.org','en.wikipedia.org']
@@ -21,5 +19,11 @@ for event in EventSource(url):
             if(change['meta']['domain'] in domains ):
                 print(event)
                 print('BOT: {bot} ----- USER: {user} ----- TITLE: {title}'.format(**change))
-                r = mycol.insert_one(json.loads(str(event).replace('$schema','schema')))
-                print('Inserted ID: ' + str(r.inserted_id))
+                response = kinesis_client.put_record(
+                    DeliveryStreamName='WikiStream',
+                    Record={
+                        'Data': json.dumps(str(event).replace('$schema','schema'))
+                    }
+                )
+
+                print(response)
