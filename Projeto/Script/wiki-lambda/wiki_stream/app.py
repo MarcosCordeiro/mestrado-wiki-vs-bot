@@ -7,7 +7,6 @@ def readJson(y):
     listValues=[]
     for key, value in y.items():
         if isinstance(value, dict):
-            k=key
             readJson(value)
         else:
             listValues.append(value)
