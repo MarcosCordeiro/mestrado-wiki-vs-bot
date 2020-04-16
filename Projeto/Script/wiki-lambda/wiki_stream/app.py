@@ -12,6 +12,7 @@ def readJson(y):
             listValues.append(value)
     return listValues
 
+
 def lambda_handler(event, context):
     output = []
 
@@ -21,12 +22,12 @@ def lambda_handler(event, context):
         print(payload)
         reading = json.loads(payload)
 
-        csv_line = str(readJson(reading))[1:-1]
-
+        csv_line = (str(readJson(reading))[1:-1]) + "\n"
+        data_output = str(base64.b64encode(csv_line.encode("utf-8")), "utf-8")
         output_record = {
             'recordId': record['recordId'],
             'result': 'Ok',
-            'data': str(base64.b64encode(csv_line.encode("utf-8")), "utf-8")
+            'data': data_output
         }
         output.append(output_record)
 
