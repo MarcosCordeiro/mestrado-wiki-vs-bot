@@ -1,0 +1,13 @@
+hadoop fs -mkdir -p wikibot/csv_data
+hadoop fs -put /tmp/mergedfile.csv wikibot/csv_data
+hadoop fs -ls hdfs://ip-172-31-92-136.ec2.internal:8020/user/root/wikibot/csv_data
+
+CREATE SCHEMA IF NOT EXISTS wikibot;
+
+CREATE EXTERNAL TABLE IF NOT EXISTS wikibot.wikidata
+(schema STRING, id STRING, type STRING, namespace STRING, title STRING, comment STRING, wiki_timestamp STRING, wiki_user STRING, bot STRING, minor STRING, patrolled STRING, server_url STRING, server_name STRING, server_script_path STRING, wiki STRING, parsedcomment STRING)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION 'hdfs://ip-172-31-92-136.ec2.internal:8020/user/root/wikibot/csv_data';
+

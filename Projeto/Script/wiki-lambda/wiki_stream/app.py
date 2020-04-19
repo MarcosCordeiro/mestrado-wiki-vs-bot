@@ -9,7 +9,10 @@ def readJson(y):
         if isinstance(value, dict):
             readJson(value)
         else:
-            listValues.append(value)
+            if isinstance(value, str):
+                listValues.append(value.replace(',','').replace('\'',''))
+            else:
+                listValues.append(value)
     return listValues
 
 
