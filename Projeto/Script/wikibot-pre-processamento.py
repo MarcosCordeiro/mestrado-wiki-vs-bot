@@ -10,6 +10,7 @@
 #nltk.download('punkt')
 #!pip install unidecode
 #!pip install matplotlib
+#!pip install pyhive
 
 
 # In[2]:
@@ -26,13 +27,17 @@ from nltk.corpus import stopwords
 from string import punctuation
 from nltk.stem import RSLPStemmer
 from unidecode import unidecode
+from pyhive import hive
 
 
 # In[3]:
 
 
-#Carrega dados refined
-df = pd.read_csv("../s3_data/refined/refined.csv", names=["wiki_id", "title", "timestamp", "user","bot"])
+#Carrega dados refined do Hive
+#df = pd.read_csv("../s3_data/refined/refined.csv", names=["wiki_id", "title", "timestamp", "user","bot"])
+
+conn = hive.Connection(host=host,port= 10000)
+dataframe = pd.read_sql("SELECT wiki_id, title, wiki_timestamp, wiki_user, bot FROM defined.wikidata", conn)
 
 
 # ## Parte 1
@@ -119,12 +124,12 @@ df.head()
 
 # ### DynamoDB
 
-# In[ ]:
+# In[13]:
 
 
 # Grava tabela tratada no DynamoDB
-MY_ACCESS_KEY_ID = 'AKIAR3CZLWEYF7GITSGS'
-MY_SECRET_ACCESS_KEY = '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'
+MY_ACCESS_KEY_ID = ''
+MY_SECRET_ACCESS_KEY = ''
 
 resource = boto3.resource('dynamodb', aws_access_key_id=MY_ACCESS_KEY_ID, aws_secret_access_key=MY_SECRET_ACCESS_KEY, region_name='us-east-1')
 
@@ -140,7 +145,7 @@ for w in myl:
     i=i+1
     table.put_item(Item=w)
     
-print("Iten(s) gravado(s) %d",i)
+print("Iten(s) gravado(s) " + str(i))
 
 
 # In[ ]:

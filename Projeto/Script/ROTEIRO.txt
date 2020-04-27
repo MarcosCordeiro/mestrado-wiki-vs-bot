@@ -7,12 +7,14 @@ Eu vou apresentar pra vocês a solução que eu desenvolvi para criar um process
 Para esse projeto, eu escolhi desenvolver na AWS por ter muitas ferramentas que auxiliam uma arquitetura bigdata e por eu ter uma boa familiaridade também.
 
 Eu vou mastrar pra você o processo completo que eu montei. Desde a captura do dado até a execução de análises. Ok?
-O foco dessa apresentação serão as formas de armazenamento dos dados em todas as etapas do processo. Eu não vou focar muito na parte das análises mas vou mostrar o que eu fiz até o momento.
-Os detalhes dessas análise eu vou explicadas posteriormente.
+O foco dessa apresentação serão as formas de armazenamento dos dados em todas as etapas do processo. Eu não vou focar muito na parte das análises mas vou mostrar o que eu fiz até o momento. Os detalhes dessas análise eu vou explicadas posteriormente.
 
 Nesse vídeo eu vou mostrar um pouco da teoria no ínicio e depois eu vou mostrar cada ponto como esta desenvolvido na própria AWS.
 
 Então vamos começar...
+
+
+
 
 # Problema - slide 2
 Qual o problematica que eu resolvi utilizar para aplicar essa arquitetura que foi desenvolvida?
@@ -22,10 +24,15 @@ Baseado no artigo que esta aqui na referência, eu pensei em capturar os dados d
 Então eu vou analisar quantos artigos os bots alteram? Quais temas? Existe algum foco maior dessas alterações nos artigos como Religião, esportes, política?
 E também comparar esses dados com artigos alterados por bots ou não bots.
 
+
+
+
 # Caractearisticas dos dados - slide 3
 Quais são as características desses dados que eu vou armazenar.
 A origem deles vem de um endpoint REST da prória wikipedia onde tem diversas informações.
 Para esse estudo, eu foquei somente no endpoint que me traz os títulos das alterações e não o conteúdo alterado para ficar mais fácil de analisar. 
+
+
 
 #Slide 4
 Esse são todos os dados retornados no payload de endpoint, mas eu só vou utilizar alguns deles nesse caso.
@@ -40,21 +47,25 @@ Entre as técnicas que pretedo utilizar estão K-means, DBScan e Single-linkage
 
 #Slide 7
 Aqui esta o foco dessa desse vídeo. As diversas formas de armazenamento que foram utilizadas.
-Eu utilizei o Storage da aws, o S3, para armazenar o payload em formato csv. Isso facilita o import para o Hadoop.
+Eu utilizei o Storage da aws, o S3, para armazenar o payload em formato csv, pq isso facilita o import para o Hadoop.
 Os dados crus são armazendos em um cluster EMR com Hadoop/HDFS.
 O resultado do pré-processamento será gravado no DynamoDB para posteriormente serem utilizados nas clusterizações.
 E utilizo elasticsearch parar armazenar os dados em tempo real para  ser possível fazer consultas de forma rápida.
+
+
+
+
 
 #Slide 8
 Esse é o desenho da arquitetura por completo.
 Tem um container rodando na ECS recebendo o payload do endpoint da wikipedia e enviando isso para um sistema de filas.
 No caso eu utilizei o Kinesis Firehose para receber, transformar e armazenar os dados.
 
-Na camada de Speed Layer, aqui embaixo, o Kinesis Firehose envia para o Kinesis datastream para poder armazenar do Elasticsearch.
+Na camada de Speed Layer, aqui embaixo, o Kinesis Firehose envia para o Kinesis datastream para poder armazenar no Elasticsearch.
 Eu não quis explorar a camada de speed layer porque não é o foco desse estudo também.
 Eu decidi armazenar no elastic somente para mostrar que daqui é possível evoluir pra algo mais apropriado para análises, como por exemplo utilizando o Spark Streaming.
 Os dados que eu estou gravando no elastic eu estou lendo através de uma ferramento de análise de logs somente para conseguir analiser os dados em tempo real. Eu não quis perder muito tempo aqui.
-Com o graylog nós podemos ver os dados em tempo real e ainda criar alguns dashboards básicos.
+Com o graylog nós podemos ver os dados que estão chegando e ainda criar alguns dashboards básicos.
 
 Na camada de cima, na Batch Layer, o Kinesis firehouse faz uma transformação do dado através de um script python que esta como um Lambda na aws.
 Essa transformação simplesmente converte o payload no formato json pra csv.
@@ -64,19 +75,25 @@ Um processo batch que está no EMR, ele coleta esses dados do bucket e importa p
 Lá tem uma tabela onde os dados crus são armazenados.
 
 Em um outro momento, um script python le esses dados do Hive para fazer a parte de limpeza e pré-processamento.
-O outup desse script é gravado no DynamoDB para ser trabalhado posteriormente em outro script python. Onde serão feitas as análises para clusterizar os títulos dos artigos que foram coletados.
+O outup desse script é gravado no DynamoDB para ser trabalhado posteriormente onde serão feitas as análises para clusterizar os títulos dos artigos que foram coletados.
 
-Agora nós já fomos pra camada de serving.
+
+
+
+Aqui nós já estamos na camada de serving.
 Os dados que foram armazenados no DynamoDb serão utilizados para gerar toda a análise dos títulos alterados e serão gerados gráficos dos resultados dessa execução.
-Esse gráficos serão disponibilizados em uma interface web via Flask para o usuário final poder analisar.
+Esse gráficos serão disponibilizados em uma página usuário final poder analisar.
 
 Essa é a arquitetura completada da solução.
 
 Teoria é bom mas vamos ver tudo isso na prática.
 
 Eu vou mostrar cada parte desses componentes na própria aws pra vocẽs verem como está.
-Para o vídeo não ficar longo, eu não vou fazer execuções que demorem muito tempo, vou só mostrar como estão implementadas e seus funcionamentos.
-E como eu ja disse no ínicio, não vou me aprofundar na parte das análises. Vou mostrar o código e o jupyter notebook, com o script ja executado.
+Para o vídeo não ficar longo, eu não vou fazer execuções por que demorem muito tempo, vou só mostrar como estão implementadas e seus funcionamentos.
+E como eu ja disse no ínicio, não vou me aprofundar na parte das análises. Vou mostrar o código e o jupyter notebook, com o script ja executado só pra voces verem como está.
+
+
+
 
 # 1 - Endpoint Wiki
 Vamos começar vendo o endpoint da wiki que é disponibilizado.
@@ -114,6 +131,11 @@ Eu vou entrar na task pra mostrar o log dele em tempo real.
 Aqui mostra os registros nos últimos 30 segundos.
 Eu ja estou coletando esses dados a umas 3 semanas mais ou menos.
 
+
+
+
+
+
 # abrir o firehouse
 Agora eu vou mostrar como esta o Firehose.
 Aqui tem essa execução chamada Wikistream. Ela esta recebendo os dados enviados no script que esta no container la no ecs e esta gravando em um bucket no s3 chamado wikibot, como vocês podem ver aqui na parte de destination.
@@ -138,6 +160,12 @@ Vou abrir o mais recente pra vocês verem como ele fica após ser transformado p
 #abrir um arquivo do bucket
 
 Esses dados que estão em csv, eles são carregados por um processo batch, que é executado via Crontab da instância master do cluster hadoop montado no EMR da amazon.
+
+
+
+
+
+
 
 #abrir código do batch
 
@@ -183,9 +211,12 @@ foi mostrado toda essa parte da origem do dado até a camada de batch.
 
 Na camada de baixo, na speed, esta bem mais simples.
 O kinesis firehose envia os mesmos dados da entrada para o kinesis datastream, para servir como ingestor dos dados no elasticsearch.
-Isso é feito através de um conector do Graylog que cria essa ponte entre o kinesis data stream e o armazenamento no elastic search.
+Isso é feito através de um conector do Graylog que cria essa ponte entre o kinesis data stream e o armazenamento no elasticsearch.
 
 O graylog, q está servindo só para visualizar os dados em tempo real, esta sendo executado em uma instância EC2 com Docker.
+
+
+
 
 #mostrar terminal conectado no EC2
 
@@ -205,6 +236,11 @@ Como eu fiz nesse aqui...
 #Abrir dashboard...
 Aqui só tem algumas sumarizações mais para mostrar os dados que estão sendo gravados.
 De fato não quis perder muito tempo aqui.
+
+
+
+
+
 
 #voltar para o desenho da arquitetura
 
@@ -228,7 +264,7 @@ Talvez o k-means não seja uma boa técnica para a análise que to buscando e po
 Esses gráficos serão disponibilizados via flask pro usuário final acessar pelo browser.
 
 #voltar para o desenho da arquitetura
-E com isso finalizamos a parte de visualização das ferramentas e as execuções que estão sendo feitas nesse projeto até aqui.
+E com isso eu mostrei pra voces todas as implementações desssa arquitetura.
 
 #Voltar para o ppt
 

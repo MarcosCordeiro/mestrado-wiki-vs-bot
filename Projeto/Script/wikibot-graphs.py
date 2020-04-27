@@ -9,7 +9,7 @@
 #!pip install matplotlib
 
 
-# In[15]:
+# In[2]:
 
 
 import pandas as pd
@@ -25,12 +25,12 @@ from sklearn.decomposition import PCA
 
 # ### Recupera dados do DynamoDB
 
-# In[11]:
+# In[3]:
 
 
 def query_dynamodb(bot):
-    MY_ACCESS_KEY_ID = 'AKIAR3CZLWEYF7GITSGS'
-    MY_SECRET_ACCESS_KEY = '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'
+    MY_ACCESS_KEY_ID = ''
+    MY_SECRET_ACCESS_KEY = ''
     dynamodb = boto3.resource('dynamodb', aws_access_key_id=MY_ACCESS_KEY_ID, aws_secret_access_key=MY_SECRET_ACCESS_KEY, region_name='us-east-1')
     table = dynamodb.Table('wikibot-title_cleaned')
     
@@ -50,7 +50,7 @@ def query_dynamodb(bot):
     return df
 
 
-# In[18]:
+# In[4]:
 
 
 # Separa dataframes entre bots true e false
@@ -58,7 +58,7 @@ title_bot_true = query_dynamodb('True')
 title_bot_false = query_dynamodb('True')
 
 
-# In[19]:
+# In[5]:
 
 
 # Vec. transform com bots = true
@@ -69,7 +69,7 @@ features_bot_true = vec.transform(str_list)
 print(features_bot_true)
 
 
-# In[20]:
+# In[6]:
 
 
 # Vec. transform com bots = false
@@ -79,7 +79,7 @@ features_bot_false = vec.transform(str_list)
 print(features_bot_false)
 
 
-# In[21]:
+# In[7]:
 
 
 labels = 'Bot','Não Bots'
@@ -96,7 +96,7 @@ plt.show()
 
 # ## Palavras mais populares
 
-# In[22]:
+# In[8]:
 
 
 #bot = true
@@ -107,7 +107,7 @@ print(rslt)
 rslt.plot.bar(rot=0, figsize=(16,10), width=0.8)
 
 
-# In[23]:
+# In[9]:
 
 
 #bot = false
@@ -120,18 +120,18 @@ rslt.plot.bar(rot=0, figsize=(16,10), width=0.8)
 
 # ## K-Means bot = false
 
-# In[24]:
+# In[12]:
 
 
 Sum_of_squared_distances = []
-K = range(1,150)
+K = range(1,30)
 for k in K:
     km = KMeans(n_clusters=k)
     km = km.fit(features_bot_false)
     Sum_of_squared_distances.append(km.inertia_)
 
 
-# In[25]:
+# In[13]:
 
 
 #Best result cluster = 150
@@ -148,7 +148,7 @@ plt.show()
 # 
 # Isso, porém, não significa que os clusters não sejam relevantes ou tenham qualquer prejuízo interpretativo. Na prática, a maldição da dimensionalidade implica apenas que é necessário input humano para decidir o melhor número de clusters.
 
-# In[ ]:
+# In[14]:
 
 
 fig = plt.figure(figsize=plt.figaspect(0.5))
@@ -205,7 +205,7 @@ plt.show()
 
 # ## K-means bot = True
 
-# In[26]:
+# In[15]:
 
 
 Sum_of_squared_distances = []
@@ -216,7 +216,7 @@ for k in K:
     Sum_of_squared_distances.append(km.inertia_)
 
 
-# In[27]:
+# In[16]:
 
 
 plt.plot(K, Sum_of_squared_distances, 'bx-')
@@ -226,7 +226,7 @@ plt.title('Elbow Method For Optimal k')
 plt.show()
 
 
-# In[28]:
+# In[17]:
 
 
 fig = plt.figure(figsize=plt.figaspect(0.5))
