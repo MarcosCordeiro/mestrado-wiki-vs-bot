@@ -1,0 +1,241 @@
+### ROTEIRO
+
+## APRESENTAÇÃO - slide 1
+Ola pessoal, tudo bem?
+
+Eu vou apresentar pra vocês a solução que eu desenvolvi para criar um processo de análise de textos baseado em uma arquitetura Lambda.
+Para esse projeto, eu escolhi desenvolver na AWS por ter muitas ferramentas que auxiliam uma arquitetura bigdata e por eu ter uma boa familiaridade também.
+
+Eu vou mastrar pra você o processo completo que eu montei. Desde a captura do dado até a execução de análises. Ok?
+O foco dessa apresentação serão as formas de armazenamento dos dados em todas as etapas do processo. Eu não vou focar muito na parte das análises mas vou mostrar o que eu fiz até o momento.
+Os detalhes dessas análise eu vou explicadas posteriormente.
+
+Nesse vídeo eu vou mostrar um pouco da teoria no ínicio e depois eu vou mostrar cada ponto como esta desenvolvido na própria AWS.
+
+Então vamos começar...
+
+# Problema - slide 2
+Qual o problematica que eu resolvi utilizar para aplicar essa arquitetura que foi desenvolvida?
+Bots Vs Wiki
+
+Baseado no artigo que esta aqui na referência, eu pensei em capturar os dados de artigos que foram alterados na wikipedia em português e analisar qual a influência dos bots nessas alterações.
+Então eu vou analisar quantos artigos os bots alteram? Quais temas? Existe algum foco maior dessas alterações nos artigos como Religião, esportes, política?
+E também comparar esses dados com artigos alterados por bots ou não bots.
+
+# Caractearisticas dos dados - slide 3
+Quais são as características desses dados que eu vou armazenar.
+A origem deles vem de um endpoint REST da prória wikipedia onde tem diversas informações.
+Para esse estudo, eu foquei somente no endpoint que me traz os títulos das alterações e não o conteúdo alterado para ficar mais fácil de analisar. 
+
+#Slide 4
+Esse são todos os dados retornados no payload de endpoint, mas eu só vou utilizar alguns deles nesse caso.
+Que são esses.
+
+#Slide 5
+Aqui eu tenho só as informações que eu preciso pro estudo, onde o principal são: título, usuário, se foi alterado por bot ou não e domínio para filtrar somente wikipedia em português.
+
+#Slide 6
+Na parte de análises, eu vou utilizar técnicas de agrupamento para ver qual traz o melhor resultado.
+Entre as técnicas que pretedo utilizar estão K-means, DBScan e Single-linkage
+
+#Slide 7
+Aqui esta o foco dessa desse vídeo. As diversas formas de armazenamento que foram utilizadas.
+Eu utilizei o Storage da aws, o S3, para armazenar o payload em formato csv. Isso facilita o import para o Hadoop.
+Os dados crus são armazendos em um cluster EMR com Hadoop/HDFS.
+O resultado do pré-processamento será gravado no DynamoDB para posteriormente serem utilizados nas clusterizações.
+E utilizo elasticsearch parar armazenar os dados em tempo real para  ser possível fazer consultas de forma rápida.
+
+#Slide 8
+Esse é o desenho da arquitetura por completo.
+Tem um container rodando na ECS recebendo o payload do endpoint da wikipedia e enviando isso para um sistema de filas.
+No caso eu utilizei o Kinesis Firehose para receber, transformar e armazenar os dados.
+
+Na camada de Speed Layer, aqui embaixo, o Kinesis Firehose envia para o Kinesis datastream para poder armazenar do Elasticsearch.
+Eu não quis explorar a camada de speed layer porque não é o foco desse estudo também.
+Eu decidi armazenar no elastic somente para mostrar que daqui é possível evoluir pra algo mais apropriado para análises, como por exemplo utilizando o Spark Streaming.
+Os dados que eu estou gravando no elastic eu estou lendo através de uma ferramento de análise de logs somente para conseguir analiser os dados em tempo real. Eu não quis perder muito tempo aqui.
+Com o graylog nós podemos ver os dados em tempo real e ainda criar alguns dashboards básicos.
+
+Na camada de cima, na Batch Layer, o Kinesis firehouse faz uma transformação do dado através de um script python que esta como um Lambda na aws.
+Essa transformação simplesmente converte o payload no formato json pra csv.
+O retorno desse lambda é gravado em um bucket no S3.
+
+Um processo batch que está no EMR, ele coleta esses dados do bucket e importa para o HDFS via HIVE.
+Lá tem uma tabela onde os dados crus são armazenados.
+
+Em um outro momento, um script python le esses dados do Hive para fazer a parte de limpeza e pré-processamento.
+O outup desse script é gravado no DynamoDB para ser trabalhado posteriormente em outro script python. Onde serão feitas as análises para clusterizar os títulos dos artigos que foram coletados.
+
+Agora nós já fomos pra camada de serving.
+Os dados que foram armazenados no DynamoDb serão utilizados para gerar toda a análise dos títulos alterados e serão gerados gráficos dos resultados dessa execução.
+Esse gráficos serão disponibilizados em uma interface web via Flask para o usuário final poder analisar.
+
+Essa é a arquitetura completada da solução.
+
+Teoria é bom mas vamos ver tudo isso na prática.
+
+Eu vou mostrar cada parte desses componentes na própria aws pra vocẽs verem como está.
+Para o vídeo não ficar longo, eu não vou fazer execuções que demorem muito tempo, vou só mostrar como estão implementadas e seus funcionamentos.
+E como eu ja disse no ínicio, não vou me aprofundar na parte das análises. Vou mostrar o código e o jupyter notebook, com o script ja executado.
+
+# 1 - Endpoint Wiki
+Vamos começar vendo o endpoint da wiki que é disponibilizado.
+
+https://stream.wikimedia.org/?doc#/Streams/get_v2_stream_recentchange
+
+Nessa página tem diversos endpoints como vocês podem ver mas, o que eu estou utilizando é esse daqui, se chama recentchange.
+Ele que me retorna aquele payload que mostrei ainda pouco.
+
+# 2 - container
+Esse endpoint esta sendo lido através desse script python e ele é bem simples.
+
+É esses script aqui...
+#abrir código wiki.py
+
+Basicamente ele lê o endpoint, faz um parse do json e envia pro kinesis firehouse.
+Esse script está sendo executado em um container no ECS.
+O script do Container também é bem simples como vocês podem ver aqui no Docker compose.
+
+#abrir dockerfile
+
+É só uma imagem com python 3.8 com algumas libs necessárias para executar o script em python.
+Esse script wiki.py é o código que acabei de mostrar que é copiado para dentro do container e executado na sua subida.
+A partir do momento que sobe o container, já começa a coletar os dados.
+
+
+# Mostrar desenho da arquitetura
+Essa parte que eu expliquei, é esse comecinho entre a wikipedia, ecs e o kinesis firehouse.
+
+Eu vou entrar aqui no cluster da ecs que eu criei que esta executando o python com a coleta do payload.
+
+# abrir ECS
+Aqui eu tenho esse cluster chamado wikicluster, nele tem só um serviço e um task que é justamente esse container que esta batendo la no endpoint.
+Eu vou entrar na task pra mostrar o log dele em tempo real.
+Aqui mostra os registros nos últimos 30 segundos.
+Eu ja estou coletando esses dados a umas 3 semanas mais ou menos.
+
+# abrir o firehouse
+Agora eu vou mostrar como esta o Firehose.
+Aqui tem essa execução chamada Wikistream. Ela esta recebendo os dados enviados no script que esta no container la no ecs e esta gravando em um bucket no s3 chamado wikibot, como vocês podem ver aqui na parte de destination.
+Antes de chegar no bucket, o payload passa pelo lambda, conforme o desenho aqui da arquitetura.
+
+#Mudar rapidamente pro desenho e mostrar o lambda
+
+#ir até a parte do lambda
+
+Essa é a função que esta transformando o payload json em csv pra ser gravado no bucket.
+Vamos ver ele aqui.
+Aqui ta o código dessa function, também não tem nada muito complexo.
+Ela só recebe o json e converte pra csv.
+O resultado é gravado no bucket. Vou mostrar o bucket aq também.
+
+#Abrir o bucket
+Aq no S3, tem esse bucket chamado wikibot e, nessa pasta chamada wikidata ficam os csvs.
+Na pasta old, ficam os csvs que já foram carregados pro HDFS.
+Essa pasta com o ano 2020, ficam os csvs que estão sendo criados e ainda não foram processados.
+Vou abrir o mais recente pra vocês verem como ele fica após ser transformado pela function. 
+
+#abrir um arquivo do bucket
+
+Esses dados que estão em csv, eles são carregados por um processo batch, que é executado via Crontab da instância master do cluster hadoop montado no EMR da amazon.
+
+#abrir código do batch
+
+Esse processo batch junta todos os csvs de todas as pastas em um só.
+Copia em uma pasta temporária e na sequência, copia para o HDFS através do comando hadoop fs -put.
+Com isso os dados já estão disponíveis para serem consultados.
+
+Eu criei uma tabela no Hive para poder ler essas informações.
+Essa aqui é a tabela que eu criei apontando pro diretório onde eu copio os arquivos csvs.
+
+#Mostrar script de criação da tabela do Hive
+No hive eu criei dois schemas: um chamado raw, onde são lidos esses arquivos csvs e tem todas as informações do payload.
+E outro schema chamado defined, onde tem só os campos que vou utilizar nas análises.
+
+
+
+Eu vou fazer um select rápido de cada tabela só para vcs verem os dados carregados em cada schema.
+
+#executar um select na raw
+aqui está os dados da raw
+#executar um select na definied
+e aqui estão os dados da definied 
+
+Esses dados da defined são carregados através de um select insert da raw.
+
+#Mostrar select insert
+
+Esses dados serão utilizados por um script python que irá fazer toda a limpeza e pré-processamento dos dados e gravar o resultado no dynamoDB.
+Esse aqui é esse script python.
+
+#abrir script python
+
+Ele é um pouco mais longo mas fácil de entender.
+Resumindo, aqui ele faz todos tratamentos necessários para o título dos artigos alterados.
+Ele remove stopwords, faz unicode, tokeniza, faz o steming, remove nuloes e, no final grava no DynamoDB.
+
+#Abrir DynamoDB
+Aqui no dynamoDB eu tenho essa tabela chamada wikibot-title_cleaned e nela estão os dados gravados até o momento.
+
+Com isso...
+#volta o desenho da arquitetura.
+foi mostrado toda essa parte da origem do dado até a camada de batch.
+
+Na camada de baixo, na speed, esta bem mais simples.
+O kinesis firehose envia os mesmos dados da entrada para o kinesis datastream, para servir como ingestor dos dados no elasticsearch.
+Isso é feito através de um conector do Graylog que cria essa ponte entre o kinesis data stream e o armazenamento no elastic search.
+
+O graylog, q está servindo só para visualizar os dados em tempo real, esta sendo executado em uma instância EC2 com Docker.
+
+#mostrar terminal conectado no EC2
+
+Aqui eu to dento dessa instância do ec2 que tem um docker-compose sendo executado para subir o graylog.
+
+#executar docker-compose ps e container ls 
+
+#abrir o docker-compose
+Esse aqui é o compose que sobe o graylog. Eu peguei ele da própria documentação e alterei só o que precisava pra executar ele.
+
+No graylog...
+#abrir o graylog
+
+...ele mostra os dados que estão chegando no elastic com detalhes.
+E também é possível fazer algumas análises simples em um dashboard.
+Como eu fiz nesse aqui...
+#Abrir dashboard...
+Aqui só tem algumas sumarizações mais para mostrar os dados que estão sendo gravados.
+De fato não quis perder muito tempo aqui.
+
+#voltar para o desenho da arquitetura
+
+Por fim, a camada de visualização.
+Nessa camada, tem um outro script python que esta sendo executado em outra instancia do EC2 que irá fazer as análises dos dados armazenados no dynamodb e disponibilizado para o usuário.
+Eu vou mostrar só o código desse script porques a execução dele demora um pouco e estou trabalhando nela pra melhorar algumas coisas ainda.
+
+#abrir código dos graphicos
+Aqui ele busca os dados no Dynamodb e armazena em um dataframe.
+
+Na busca, ele faz um filtro para artigos alterados por bot e outra consulta para artigos que não foram alterados por bots.
+E daq para baixo, começa todos os processos para gerar alguns gráficos de comparação de quantidade de artigos alteradas, palavras mais utilizadas, o k-means e dbscan, que foi onde parei e ainda será evoluido.
+
+Eu vou mostrar pra vcs, uma execução desse script no Jupyter notebook só para mostrar as execuções prontas.
+
+#Abrir o jupyter.
+Aqui tem as execuções com alguns resultados, o gráfico pizza coparando a qtd alterado por bots e alterado por não bots, palavras mais usadas em cada uma dessas divisões e a análise do k-means que precisa ser melhorada ainda.
+Os clusters estão bem dispersos.
+Talvez o k-means não seja uma boa técnica para a análise que to buscando e por isso vou tentar outras técnicas para comparar o resultado.
+
+Esses gráficos serão disponibilizados via flask pro usuário final acessar pelo browser.
+
+#voltar para o desenho da arquitetura
+E com isso finalizamos a parte de visualização das ferramentas e as execuções que estão sendo feitas nesse projeto até aqui.
+
+#Voltar para o ppt
+
+# Referências - Slide 9
+Essas são as referências que utilizei.
+
+# Obrigado - Slilde 10
+E é isso por enquanto pessoal...
+Obrigado pela paciência e até a próxima.
+

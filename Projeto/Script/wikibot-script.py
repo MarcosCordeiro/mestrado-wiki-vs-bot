@@ -21,6 +21,7 @@ import nltk
 import time
 import datetime
 import boto3
+import numpy as np
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from string import punctuation
@@ -97,6 +98,8 @@ title_cleaned = tokens_uni.apply(lambda line:  [w for w in line if not w in stop
 
 #Cria coluna com os titulos tratados
 df["title_cleaned"] = title_cleaned.apply(lambda line: " ".join(line))
+df.replace("", np.nan, inplace=True)
+df.dropna(inplace=True)
 df.head()
 
 
@@ -164,8 +167,9 @@ for i in df2.columns:
     df2[i] = df2[i].astype(str)
 
 myl=df2.T.to_dict().values()
-print(myl)
-#table = resource.Table('wikibot-title_cleaned')
+#print(myl)
+table = resource.Table('wikibot-title_cleaned')
 
-#for w in myl:
-#    table.put_item(Item=w)
+for w in myl:
+    print(w)
+    table.put_item(Item=w)
