@@ -1,0 +1,4 @@
+hadoop fs -mkdir -p wikibot/csv_data
+hadoop fs -put /tmp/mergedfile.csv wikibot/csv_data
+hadoop fs -ls hdfs://ip-172-31-95-151.ec2.internal:8020/user/root/wikibot/csv_data
+
