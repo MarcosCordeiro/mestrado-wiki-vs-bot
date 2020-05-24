@@ -1,0 +1,6 @@
+FROM python:3.8
+RUN pip install boto3 sseclient
+RUN mkdir -p /csv_output
+COPY  ../Python_Notebook/wiki.py /wiki.py
+
+ENTRYPOINT ["python","-u","wiki.py"]
