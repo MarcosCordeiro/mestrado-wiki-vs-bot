@@ -7,7 +7,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS raw.wikidata
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
 STORED AS TEXTFILE
-LOCATION 'hdfs://ip-172-31-83-247.ec2.internal:8020/user/hadoop/wikibot/csv_data';
+LOCATION 'hdfs://ip-172-31-90-192.ec2.internal:8020/user/root/wikibot/csv_data';
 
 --CRIA SCHEMA E TABELA DEFINED
 CREATE SCHEMA IF NOT EXISTS defined;

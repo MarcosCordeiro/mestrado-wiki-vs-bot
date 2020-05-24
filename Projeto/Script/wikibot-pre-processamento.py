@@ -35,7 +35,7 @@ from pyhive import hive
 
 #Carrega dados refined do Hive
 #df = pd.read_csv("../s3_data/refined/refined.csv", names=["wiki_id", "title", "timestamp", "user","bot"])
-
+host="ec2-34-230-59-24.compute-1.amazonaws.com"
 conn = hive.Connection(host=host,port= 10000)
 dataframe = pd.read_sql("SELECT wiki_id, title, wiki_timestamp, wiki_user, bot FROM defined.wikidata", conn)
 
